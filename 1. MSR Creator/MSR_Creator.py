@@ -703,6 +703,23 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
             gpd_MSRs['CtLst100kM']=pd_LoadCenterRelatedAttributes['Cities100kM']
             gpd_MSRs['CtCnt100kM'] = pd_LoadCenterRelatedAttributes['CityCountWithin100km']
             gpd_MSRs['PopIn100kM']=pd_LoadCenterRelatedAttributes['PopWithin100km']
+
+            #New section to include height data for each MSR
+            path_elev = f"{SubfolderStage1_Clipping}{RE_Technology}_{FileName_Elevation}_projected.tif"
+            stats_elev = zonal_stats(Path_FinalMSRs, path_elev, stats="mean max") #stats could be "mean median min max"
+            gpd_MSRs["Elev_mean"] = [s["mean"] for s in stats_elev]
+            gpd_MSRs["Elev_max"]  = [s["max"] for s in stats_elev]
+
+            with rasterio.open(path_elev) as src:
+                elev_values = []
+                for pt in gpd_MSRs.centroid:
+                    x, y = pt.x, pt.y
+                    row, col = src.index(x, y)
+                    elev = src.read(1)[row, col]
+                    elev_values.append(elev)
+            gpd_MSRs["Elev_centroid"] = elev_values
+            print("Altitude data (mean, max and centroid) inserted")
+
             print("load center related attributes inserted")
             gpd_MSRs.to_file(Path_FinalMSRs)
 
