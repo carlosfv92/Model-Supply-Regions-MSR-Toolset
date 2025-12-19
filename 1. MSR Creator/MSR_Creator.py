@@ -504,7 +504,7 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
                     ScoredLayer = ScoredLayer.where(~LayerToScore.isin([11, 14, 20, 30, 110, 120, 130, 140, 150, 180, 190, 200]), 1)
 
                 if LayerToScoreName=="%s_projected"%FileName_Elevation:
-                    ScoredLayer = ScoredLayer.where(~(LayerToScore<3500),1)    #initially 2000 but changed for Bolivia's mountain conditions
+                    ScoredLayer = ScoredLayer.where(~(LayerToScore<4000),1)    #initially 2000 but changed for Bolivia's mountain conditions
 
                 if LayerToScoreName=="%s_projected"%FileName_PopulationDensity:
                     ScoredLayer = ScoredLayer.where(~(LayerToScore<=PopulationThreshold[0]),1)
@@ -704,7 +704,7 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
             gpd_MSRs['CtCnt100kM'] = pd_LoadCenterRelatedAttributes['CityCountWithin100km']
             gpd_MSRs['PopIn100kM']=pd_LoadCenterRelatedAttributes['PopWithin100km']
 
-            #New section to include height data for each MSR
+            ############## New section to include height data for each MSR
             path_elev = f"{SubfolderStage1_Clipping}{RE_Technology}_{FileName_Elevation}_projected.tif"
             stats_elev = zonal_stats(Path_FinalMSRs, path_elev, stats="mean max") #stats could be "mean median min max"
             gpd_MSRs["Elev_mean"] = [s["mean"] for s in stats_elev]
