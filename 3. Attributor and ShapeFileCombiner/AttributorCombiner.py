@@ -78,16 +78,19 @@ if Flag_RunSolarPV:
                     #LCOEs calculated per kWH and scaled to MWh
                     #first element is in kWH so must be multiplied with 1000 to get MW basis. 2nd element is MW basis, so simply added.
                     gdf_SingleCountry['sLCOE-MWh'] = 1000 * ((CostParameters.loc["SolarPV"][0] * CostParameters.loc["SolarPV"][3] + CostParameters.loc["SolarPV"][1]/1000) / (8760 * gdf_SingleCountry['CF'] / 100)) + CostParameters.loc["SolarPV"][2]
+                    gdf_SingleCountry['sCAPEX-kW'] = (CostParameters.loc["SolarPV"][0] * CostParameters.loc["SolarPV"][3])
+                    
                     #TL parameters are in MW basis so the LCOE inherently comes in MWh. Substation costs are for 2 substations suitable for an average 50MW POA/plant. So they must be converted to per MW basis.
                     gdf_SingleCountry['tLCOE-MWh'] = ((CostParameters.loc["SolarPV"][5]* CostParameters.loc["SolarPV"][8]+CostParameters.loc["SolarPV"][6]) * gdf_SingleCountry['T_Dist_gf']+CostParameters.loc["SolarPV"][7]*CostParameters.loc["SolarPV"][8]) / (8760 * gdf_SingleCountry['CF'] / 100)
                     gdf_SingleCountry['tCAPEX-kW'] = (CostParameters.loc["SolarPV"][5]*gdf_SingleCountry['T_Dist_gf'] +
-                                                      CostParameters.loc["SolarPV"][7]) / 1000
+                                                      CostParameters.loc["SolarPV"][7]) / 1000 * CostParameters.loc["SolarPV"][8]
                     #road costs are for 50MW plant i.e. 50*8760*CF MWh
                     gdf_SingleCountry['rLCOE-MWh'] = ((CostParameters.loc["SolarPV"][10]* CostParameters.loc["SolarPV"][12]+CostParameters.loc["SolarPV"][11])*gdf_SingleCountry['RoadDist']) / (8760 *50* gdf_SingleCountry['CF'] / 100)
-                    gdf_SingleCountry['rCAPEX-kW'] = (CostParameters.loc["SolarPV"][10] * gdf_SingleCountry['RoadDist']) /50000
+                    gdf_SingleCountry['rCAPEX-kW'] = (CostParameters.loc["SolarPV"][10] * gdf_SingleCountry['RoadDist']) /(50*1000) * CostParameters.loc["SolarPV"][12]
 
                     gdf_SingleCountry['LCOE-MWh']= gdf_SingleCountry['tLCOE-MWh']+ gdf_SingleCountry['rLCOE-MWh']+gdf_SingleCountry['sLCOE-MWh']
                     gdf_SingleCountry['trCAPEX-kW'] = gdf_SingleCountry['rCAPEX-kW']+gdf_SingleCountry['tCAPEX-kW']
+                    gdf_SingleCountry['TotalCAPEX-kW'] = gdf_SingleCountry['sCAPEX-kW'] + gdf_SingleCountry['trCAPEX-kW']
 
 
                 gdf = gpd.GeoDataFrame(pd.concat([gdf, gdf_SingleCountry]))
@@ -143,19 +146,22 @@ if Flag_RunWind:
                         #LCOEs calculated per kWH and scaled to MWh
                         #first element is in kWH so must be multiplied with 1000 to get MW basis. 2nd element is MW basis, so simply added.
                         gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'sLCOE-MWh'] = 1000 * ((CostParameters.loc[var2[i]][0] * CostParameters.loc[var2[i]][3] + CostParameters.loc[var2[i]][1]/1000) / (8760 * gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],AnnualCFColName] / 100)) + CostParameters.loc[var2[i]][2]
+                        gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'sCAPEX-kW'] = (CostParameters.loc[var2[i]][0] * CostParameters.loc[var2[i]][3])
+
                         #TL parameters are in MW basis so the LCOE inherently comes in MWh. Substation costs are for 2 substations suitable for an average 50MW POA/plant. So they must be converted to per MW basis.
                         gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'tLCOE-MWh'] = ((CostParameters.loc[var2[i]][5]* CostParameters.loc[var2[i]][8]+CostParameters.loc[var2[i]][6]) * gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'T_Dist_gf']+CostParameters.loc[var2[i]][7]*CostParameters.loc[var2[i]][8]) / (8760 * gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],AnnualCFColName] / 100)
                         gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class'] == var1[i], 'tCAPEX-kW'] = (CostParameters.loc[var2[i]][5]
                                                                                                          *gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class'] ==var1[i], 'T_Dist_gf'] +
-                                                                                                         CostParameters.loc[var2[i]][7]) / 1000
+                                                                                                         CostParameters.loc[var2[i]][7]) / 1000 * CostParameters.loc[var2[i]][8]
 
                         #road costs are for 50MW plant i.e. 50*8760*CF MWh
                         gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'rLCOE-MWh'] = ((CostParameters.loc[var2[i]][10]* CostParameters.loc[var2[i]][12]+CostParameters.loc[var2[i]][11])*gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'RoadDist']) / (8760 *50* gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],AnnualCFColName] / 100)
-                        gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'rCAPEX-kW'] = (CostParameters.loc[var2[i]][10]*gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'RoadDist']) /50000
+                        gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'rCAPEX-kW'] = (CostParameters.loc[var2[i]][10]*gdf_SingleCountry.loc[gdf_SingleCountry['IEC_Class']==var1[i],'RoadDist']) / (50*1000) * CostParameters.loc[var2[i]][12]
 
 
                     gdf_SingleCountry['LCOE-MWh']= gdf_SingleCountry['tLCOE-MWh']+ gdf_SingleCountry['rLCOE-MWh']+gdf_SingleCountry['sLCOE-MWh']
                     gdf_SingleCountry['trCAPEX-kW'] = gdf_SingleCountry['rCAPEX-kW'] + gdf_SingleCountry['tCAPEX-kW']
+                    gdf_SingleCountry['TotalCAPEX-kW'] = gdf_SingleCountry['sCAPEX-kW'] + gdf_SingleCountry['trCAPEX-kW']
 
                 gdf = gpd.GeoDataFrame(pd.concat([gdf, gdf_SingleCountry]))
 
