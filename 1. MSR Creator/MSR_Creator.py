@@ -261,6 +261,21 @@ def RunResourceSufficiencyStage(Path_SuitableAreaResourceRaster,UserResourceThre
 
     return ResourceThreshold, IndicativeYield_GWh
 
+def get_vector_file_path(base_path, filename):
+    """
+    Dynamically detect and return the correct vector file path (.geojson or .shp)
+    Returns the path with the appropriate extension
+    """
+    geojson_path = f"{base_path}{filename}.geojson"
+    shp_path = f"{base_path}{filename}.shp"
+    
+    if os.path.exists(geojson_path):
+        return geojson_path
+    elif os.path.exists(shp_path):
+        return shp_path
+    else:
+        # Raise error if neither format exists
+        raise FileNotFoundError(f"Vector file not found: {filename} (.geojson or .shp)")
 
 '''
 *********Main Code**********
@@ -371,7 +386,11 @@ if RE_Technology == 'wind':
 
 rotor_diammeter, turbine_nameplate_capacity = int(ControlAnalysisInputs.WindTurbineRotorDiameter_meters), int(ControlAnalysisInputs.WindTurbineCapacity_Watts)
 
-gdf_CountryBoundaries=gpd.read_file(InputSpatialDatasetsFolder+FileName_CountryBoundaries+".shp")
+# OLD:
+#gdf_CountryBoundaries=gpd.read_file(InputSpatialDatasetsFolder+FileName_CountryBoundaries+".shp")
+# NEW:
+gdf_CountryBoundaries=gpd.read_file(get_vector_file_path(InputSpatialDatasetsFolder, FileName_CountryBoundaries))
+
 SubfolderCountryMapsForClipping=HomeDirectory+r"\RegionBoundaryMaps"
 
 
@@ -440,8 +459,11 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
             del(ClippedRaster, ProjectedRaster) #to save memory
 
             for Vector in [FileName_Roads, FileName_WaterBodies, FileName_PowerGrid, FileName_TransmissionGrid, FileName_DistributionGrid, FileName_ProtectedAreas]:
-                gdf_ClippedVector=gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder,Vector), bbox=tuple(gdf_SingleCountry.total_bounds)) #bbox (bounding box) used to avoid reading unwanted data. Note that this is does not clip features that extend beyond bbox boundary.
-
+                # OLD:
+                #gdf_ClippedVector=gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder,Vector), bbox=tuple(gdf_SingleCountry.total_bounds)) #bbox (bounding box) used to avoid reading unwanted data. Note that this is does not clip features that extend beyond bbox boundary.
+                # NEW:
+                gdf_ClippedVector=gpd.read_file(get_vector_file_path(InputSpatialDatasetsFolder, Vector), bbox=tuple(gdf_SingleCountry.total_bounds))
+                
                 if not gdf_ClippedVector.empty and Vector==FileName_Roads:
                     gdf_ClippedVector = gdf_ClippedVector[gdf_ClippedVector.GP_RTP <= RoadType]
 
@@ -662,7 +684,11 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
             print("Distances to roads inserted")
 
 
-            gdf_ClippedVector=gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder,FileName_TransmissionGrid), bbox=tuple(gdf_SingleCountry.total_bounds)) #bbox (bounding box) used to avoid reading unwanted data. Note that this is does not clip features that extend beyond bbox boundary.
+            # OLD:
+            #gdf_ClippedVector=gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder,FileName_TransmissionGrid), bbox=tuple(gdf_SingleCountry.total_bounds)) #bbox (bounding box) used to avoid reading unwanted data. Note that this is does not clip features that extend beyond bbox boundary.
+            # NEW:
+            gdf_ClippedVector=gpd.read_file(get_vector_file_path(InputSpatialDatasetsFolder, FileName_TransmissionGrid), bbox=tuple(gdf_SingleCountry.total_bounds))
+            
             if not gdf_ClippedVector.empty:
                 gdf_ClippedVector = gpd.clip(gdf_ClippedVector, gdf_SingleCountry.geometry)
             if gdf_ClippedVector.empty: #i.e there is no transmission grid
@@ -686,11 +712,19 @@ for CountryCounter in range(0,len(AllCountries)):#country wise loop
             gpd_MSRs['TD_Dist_gf'] = gpd_MSRs[['T_Dist_gf', 'D_Dist_gf']].min(axis=1)
             print("Distances to closest grid line (Transmission or Distribution) inserted")
 
-            gpd_Substations = gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder, FileName_Substations),bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            # OLD:
+            #gpd_Substations = gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder, FileName_Substations),bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            # NEW:
+            gpd_Substations = gpd.read_file(get_vector_file_path(InputSpatialDatasetsFolder, FileName_Substations), bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            
             gpd_MSRs['SubstnDist'] = gpd_MSRs.centroid.apply(MinimumDistanceOfMSRCentroidFromGivenGeometrySet, gpd_GeometrySet=gpd_Substations.centroid)/1000
             print("distance to nearest substation inserted")
 
-            gpd_LoadCenters = gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder, FileName_UrbanAreaLoadCenters),bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            # OLD:
+            #gpd_LoadCenters = gpd.read_file("%s%s.shp"%(InputSpatialDatasetsFolder, FileName_UrbanAreaLoadCenters),bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            # NEW:
+            gpd_LoadCenters = gpd.read_file(get_vector_file_path(InputSpatialDatasetsFolder, FileName_UrbanAreaLoadCenters), bbox=tuple(gdf_SingleCountry.total_bounds)).to_crs("ESRI:54009")
+            
             gpd_MSRs['Load_dst'] = gpd_MSRs.centroid.apply(MinimumDistanceOfMSRCentroidFromGivenGeometrySet, gpd_GeometrySet=gpd_LoadCenters.centroid)/1000
             print("distance to nearest load center inserted")
 
